@@ -18,12 +18,17 @@ bool Client::CheckIPRate(uint32_t time) {
     ++count;
     if (count / manager.GetMaxQueriesWindow() >=
         manager.GetMaxQueriesPerSecond()) {
-      DevWarning("[ServerSecure] %d.%d.%d.%d reached its query limit!\n",
+      DevWarning("[megazashita] %d.%d.%d.%d reached its query limit!\n",
                  (address >> 24) & 0xFF, (address >> 16) & 0xFF,
                  (address >> 8) & 0xFF, address & 0xFF);
       return false;
     }
   }
+
+  // Добавлено: Логирование текущего количества запросов
+  DevInfo("[megazashita] Current request count for %d.%d.%d.%d: %d\n",
+          (address >> 24) & 0xFF, (address >> 16) & 0xFF,
+          (address >> 8) & 0xFF, address & 0xFF, count);
 
   return true;
 }

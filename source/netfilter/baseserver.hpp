@@ -209,6 +209,11 @@ public:
   bool m_bReportNewFakeClients; // Whether or not newly created fake clients
                                 // should be included in server browser totals
   float m_flPausedTimeEnd;
+
+  // Дополнительные данные для улучшения функциональности сервера
+  int m_nMaxConnections; // Максимальное количество подключений
+  float m_flServerUptime; // Время работы сервера в секундах
+  bool m_bIsUnderMaintenance; // Флаг, указывающий на техническое обслуживание сервера
 };
 
 #endif // NETFILTER_BASESERVER_HPP

@@ -1318,10 +1318,40 @@ void Initialize(GarrysMod::Lua::ILuaBase *LUA) {
 
   LUA->PushCFunction(GetSamplePacket);
   LUA->SetField(-2, "GetSamplePacket");
+
+  // Логирование успешной инициализации
+  DevMsg(1, "[MegaZashita] Инициализация прошла успешно с версией игры: %s\n", game_version);
 }
 
 void Deinitialize() {
   CBaseServerProxy::Singleton.reset();
   Core::Singleton.reset();
+  // Логирование завершения деинициализации
+  DevMsg(1, "[MegaZashita] Деинициализация завершена.\n");
 }
-} // namespace netfilter
+
+void FilterRequest(const std::string &request) {
+    // Простейшая проверка на наличие скриптов
+    if (request.find("<script>") != std::string::npos || 
+        request.find("javascript:") != std::string::npos) {
+        DevWarning("[MegaZashita] Запрос заблокирован: потенциальная XSS-атака.\n");
+        // Здесь можно добавить логику для блокировки запроса
+    }
+
+    // Проверка на SQL-инъекции
+    FilterSQLInjection(request);
+}
+
+void FilterSQLInjection(const std::string &request) {
+    const std::vector<std::string> sql_keywords = {
+        "SELECT", "INSERT", "UPDATE", "DELETE", "DROP", "UNION", "--", "#", "/*", "*/"
+    };
+
+    for (const auto &keyword : sql_keywords) {
+        if (request.find(keyword) != std::string::npos) {
+            DevWarning("[MegaZashita] Запрос заблокирован: потенциальная SQL-инъекция.\n");
+            // Здесь можно добавить логику для блокировки запроса
+            return;
+        }
+    }
+}

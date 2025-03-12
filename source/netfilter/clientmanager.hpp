@@ -6,6 +6,7 @@
 #include "client.hpp"
 
 #include <map>
+#include <iostream> // Добавлено для вывода информации
 
 namespace netfilter {
 class ClientManager {
@@ -27,6 +28,14 @@ public:
   static const uint32_t MaxClients = 4096;
   static const uint32_t PruneAmount = MaxClients * 2 / 3;
   static const uint32_t ClientTimeout = 120;
+
+  // Новый метод для вывода состояния клиента
+  void PrintClientStatus() const {
+      std::cout << "ClientManager Status:" << std::endl;
+      std::cout << "Enabled: " << (enabled ? "true" : "false") << std::endl;
+      std::cout << "Total Clients: " << clients.size() << std::endl;
+      std::cout << "Global Count: " << global_count << std::endl;
+  }
 
 private:
   std::map<uint32_t, Client> clients;

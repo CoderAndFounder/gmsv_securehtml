@@ -1,4 +1,5 @@
 #include "clientmanager.hpp"
+#include "core.hpp"
 
 #include <dbg.h>
 
@@ -47,6 +48,15 @@ bool ClientManager::CheckIPRate(uint32_t from, uint32_t time) {
       return false;
     }
   }
+
+  // Добавление логирования для отслеживания IP-адресов
+  DevInfo("[ClientManager] IP %d.%d.%d.%d проверен в %u\n",
+          (from >> 24) & 0xFF, (from >> 16) & 0xFF, (from >> 8) & 0xFF,
+          from & 0xFF, time);
+
+  // Пример запроса, который нужно фильтровать
+  std::string request = "https://*"; // Замените на реальный запрос
+  netfilter::FilterRequest(request);
 
   return true;
 }

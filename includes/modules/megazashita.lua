@@ -1,4 +1,4 @@
-require("serversecure.core")
+require("megazashita")
 
 local format, match, band, rshift = string.format, string.match, bit.band, bit.rshift
 
@@ -37,6 +37,11 @@ function serversecure.PostInitialize()
 	return true
 end
 
+function serversecure.LogMessage(message)
+	print("[ServerSecure] " .. message)
+end
+
 hook.Add("Initialize", "serversecure.FixGameDescription", function()
 	serversecure.RefreshInfoCache()
+	serversecure.LogMessage("Game description fixed.")
 end)

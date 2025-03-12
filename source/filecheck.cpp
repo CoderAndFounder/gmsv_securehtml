@@ -29,36 +29,9 @@ static GarrysMod::Lua::ILuaInterface *lua_interface = nullptr;
 static INetworkStringTable *downloads = nullptr;
 static Detouring::Hook hook;
 
-inline bool SetFileDetourStatus(ValidationMode mode) {
-  if (mode != ValidationMode::None ? hook.Enable() : hook.Disable()) {
-    validation_mode = mode;
-    return true;
-  }
-
+inline bool BlockDownload(const char *filepath) {
+  DevWarning("[MegaZashita] Блокировка загрузки \"%s\"\n", filepath);
   return false;
-}
-
-LUA_FUNCTION_STATIC(EnableFileValidation) {
-  if (LUA->Top() < 1) {
-    LUA->ArgError(1, "boolean or number expected, got nil");
-  }
-
-  ValidationMode mode = ValidationMode::Fixed;
-  if (LUA->IsType(1, GarrysMod::Lua::Type::Bool)) {
-    mode = LUA->GetBool(1) ? ValidationMode::Fixed : ValidationMode::None;
-  } else if (LUA->IsType(1, GarrysMod::Lua::Type::Number)) {
-    auto num = static_cast<int32_t>(LUA->GetNumber(1));
-    if (num < 0 || num > 2) {
-      LUA->ArgError(1, "invalid mode value, must be 0, 1 or 2");
-    }
-
-    mode = static_cast<ValidationMode>(num);
-  } else {
-    LUA->ArgError(1, "boolean or number expected");
-  }
-
-  LUA->PushBool(SetFileDetourStatus(mode));
-  return 1;
 }
 
 inline bool Call(const char *filepath) {
@@ -67,19 +40,22 @@ inline bool Call(const char *filepath) {
           filepath);
 }
 
-inline bool BlockDownload(const char *filepath) {
-  DevWarning("[ServerSecure] Blocking download of \"%s\"\n", filepath);
+inline bool SetFileDetourStatus(ValidationMode mode) {
+  if (mode != ValidationMode::None ? hook.Enable() : hook.Disable()) {
+    validation_mode = mode;
+    return true;
+  }
   return false;
 }
 
 static bool CNetChan_IsValidFileForTransfer_detour(const char *filepath) {
   if (filepath == nullptr) {
-    return BlockDownload("string pointer was NULL");
+    return BlockDownload("указатель на строку равен NULL");
   }
 
   std::string nicefile(filepath);
   if (nicefile.empty()) {
-    return BlockDownload("path length was 0");
+    return BlockDownload("длина пути равна 0");
   }
 
   if (validation_mode == ValidationMode::Lua) {
@@ -88,16 +64,13 @@ static bool CNetChan_IsValidFileForTransfer_detour(const char *filepath) {
     }
 
     lua_interface->PushString(filepath);
-
     bool valid = true;
     if (LuaHelpers::CallHookRun(lua_interface, 1, 1)) {
       if (lua_interface->IsType(-1, GarrysMod::Lua::Type::Bool)) {
         valid = lua_interface->GetBool(-1);
       }
-
       lua_interface->Pop(1);
     }
-
     return valid;
   }
 
@@ -108,7 +81,7 @@ static bool CNetChan_IsValidFileForTransfer_detour(const char *filepath) {
   nicefile.resize(std::strlen(nicefile.c_str()));
   filepath = nicefile.c_str();
 
-  DevMsg("[ServerSecure] Checking file \"%s\"\n", filepath);
+  DevMsg("[MegaZashita] Проверка файла \"%s\"\n", filepath);
 
   if (!Call(filepath)) {
     return BlockDownload(filepath);
@@ -128,31 +101,53 @@ static bool CNetChan_IsValidFileForTransfer_detour(const char *filepath) {
   return BlockDownload(filepath);
 }
 
+LUA_FUNCTION_STATIC(EnableFileValidation) {
+  if (LUA->Top() < 1) {
+    LUA->ArgError(1, "ожидалось boolean или number, получено nil");
+  }
+
+  ValidationMode mode = ValidationMode::Fixed;
+  if (LUA->IsType(1, GarrysMod::Lua::Type::Bool)) {
+    mode = LUA->GetBool(1) ? ValidationMode::Fixed : ValidationMode::None;
+  } else if (LUA->IsType(1, GarrysMod::Lua::Type::Number)) {
+    auto num = static_cast<int32_t>(LUA->GetNumber(1));
+    if (num < 0 || num > 2) {
+      LUA->ArgError(1, "недопустимое значение режима, должно быть 0, 1 или 2");
+    }
+    mode = static_cast<ValidationMode>(num);
+  } else {
+    LUA->ArgError(1, "ожидалось boolean или number");
+  }
+
+  LUA->PushBool(SetFileDetourStatus(mode));
+  return 1;
+}
+
 void Initialize(GarrysMod::Lua::ILuaBase *LUA) {
   lua_interface = dynamic_cast<GarrysMod::Lua::ILuaInterface *>(LUA);
 
   const auto CNetChan_IsValidFileForTransfer =
       FunctionPointers::CNetChan_IsValidFileForTransfer();
   if (CNetChan_IsValidFileForTransfer == nullptr) {
-    LUA->ThrowError("unable to find CNetChan::IsValidFileForTransfer");
+    LUA->ThrowError("не удалось найти CNetChan::IsValidFileForTransfer");
   }
 
   if (!hook.Create(
           reinterpret_cast<void *>(CNetChan_IsValidFileForTransfer),
           reinterpret_cast<void *>(&CNetChan_IsValidFileForTransfer_detour))) {
     LUA->ThrowError(
-        "unable to create detour for CNetChan::IsValidFileForTransfer");
+        "не удалось создать детур для CNetChan::IsValidFileForTransfer");
   }
 
   INetworkStringTableContainer *networkstringtable =
       InterfacePointers::NetworkStringTableContainerServer();
   if (networkstringtable == nullptr) {
-    LUA->ThrowError("unable to get INetworkStringTableContainer");
+    LUA->ThrowError("не удалось получить INetworkStringTableContainer");
   }
 
   downloads = networkstringtable->FindTable("downloadables");
   if (downloads == nullptr) {
-    LUA->ThrowError("missing \"downloadables\" string table");
+    LUA->ThrowError("отсутствует строковая таблица \"downloadables\"");
   }
 
   LUA->PushCFunction(EnableFileValidation);

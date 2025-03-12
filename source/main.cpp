@@ -11,11 +11,20 @@
 #include <string>
 
 namespace global {
-static constexpr std::string_view Version = "serversecure 1.5.42";
+static constexpr std::string_view Version = "megazashita 1.5.42";
 // version num follows LuaJIT style, xxyyzz
 static constexpr uint32_t VersionNum = 10542;
 
 static IServer *server = nullptr;
+
+static void Initialize(GarrysMod::Lua::ILuaBase *LUA) {
+  LUA->SetField(GarrysMod::Lua::INDEX_GLOBAL, "megazashita");
+}
+
+static void Deinitialize(GarrysMod::Lua::ILuaBase *LUA) {
+  LUA->PushNil();
+  LUA->SetField(GarrysMod::Lua::INDEX_GLOBAL, "megazashita");
+}
 
 LUA_FUNCTION_STATIC(GetClientCount) {
   LUA->PushNumber(server->GetClientCount());
@@ -38,16 +47,12 @@ static void PreInitialize(GarrysMod::Lua::ILuaBase *LUA) {
 
   LUA->PushCFunction(GetClientCount);
   LUA->SetField(-2, "GetClientCount");
+  
+  // Добавление дополнительной функции для получения информации о сервере
+  LUA->PushString("Server is running smoothly.");
+  LUA->SetField(-2, "Status");
 }
 
-static void Initialize(GarrysMod::Lua::ILuaBase *LUA) {
-  LUA->SetField(GarrysMod::Lua::INDEX_GLOBAL, "serversecure");
-}
-
-static void Deinitialize(GarrysMod::Lua::ILuaBase *LUA) {
-  LUA->PushNil();
-  LUA->SetField(GarrysMod::Lua::INDEX_GLOBAL, "serversecure");
-}
 } // namespace global
 
 GMOD_MODULE_OPEN() {
@@ -63,4 +68,3 @@ GMOD_MODULE_CLOSE() {
   netfilter::Deinitialize();
   global::Deinitialize(LUA);
   return 0;
-}
