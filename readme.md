@@ -1,4 +1,4 @@
-# gmsv_serversecure
+# gmsv_megazashita
 
 [![Build Status](https://metamann.visualstudio.com/GitHub%20danielga/_apis/build/status/danielga.gmsv_serversecure?branchName=master)](https://metamann.visualstudio.com/GitHub%20danielga/_build/latest?definitionId=7&branchName=master)
 
